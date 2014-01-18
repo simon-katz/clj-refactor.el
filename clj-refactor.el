@@ -138,7 +138,8 @@
   (define-key clj-refactor-map (funcall key-fn "tl") 'cljr-thread-last-all)
   (define-key clj-refactor-map (funcall key-fn "cp") 'cljr-cycle-privacy)
   (define-key clj-refactor-map (funcall key-fn "cc") 'cljr-cycle-coll)
-  (define-key clj-refactor-map (funcall key-fn "cs") 'cljr-cycle-stringlike))
+  (define-key clj-refactor-map (funcall key-fn "cs") 'cljr-cycle-stringlike)
+  (define-key clj-refactor-map (funcall key-fn "ed") 'cljr-extract-defn))
 
 ;;;###autoload
 (defun cljr-add-keybindings-with-prefix (prefix)
@@ -574,6 +575,46 @@
 (define-minor-mode clj-refactor-mode
   "A mode to keep the clj-refactor keybindings."
   nil " cljr" clj-refactor-map)
+
+(defun cljr--locals ()
+  '("a" "b" "c"))
+
+(defun cljr--move-to-top-level ()
+  (while (not (eq 0 (current-column)))
+    (paredit-backward))
+
+  (newline)
+  (newline)
+  (previous-line)
+  (previous-line))
+
+(defun cljr--insert-defn-cursor-at-blank-name (content defn-args)
+  (insert "(defn  [")
+  (insert (s-join " " defn-args))
+  (insert "]\n  ")
+  (insert content)
+  (insert ")")
+  (paredit-backward)
+  (forward-char 6))
+
+(defun cljr-extract-defn ()
+  (interactive)
+  (let* ((defn-args (cljr--locals))
+         (content (cljr--delete-and-extract-sexp)))
+    (insert "(")
+    (dolist (arg defn-args)
+      (insert " ")
+      (insert arg))
+    (insert ")")
+    (paredit-backward)
+    (forward-char)
+    (save-excursion
+      (cljr--move-to-top-level)
+      (cljr--insert-defn-cursor-at-blank-name content defn-args)
+      (mc/create-fake-cursor-at-point))
+    (mc/maybe-multiple-cursors-mode)
+    ;;(paredit-forward-up) ;; TODO: I wanted to end at the end of the extracted fn
+    ))
 
 (provide 'clj-refactor)
 ;;; clj-refactor.el ends here
