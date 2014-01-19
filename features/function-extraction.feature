@@ -9,21 +9,25 @@ Feature: Function Extraction
   Scenario: Extract defn
     When I insert:
     """
-    (defn f [a]
-      (let [b 1
-            c 2]
-        (+ 1 2 a b c)))"
-    """
-    And I place the cursor before "(+ 1 2 a b c)"
-    And I press "C-! ed"
-    And I type "my-fn"
-    Then I should see:
-    """
-    (defn my-fn [a b c]
-      (+ 1 2 a b c))
+    (def d 3)
 
     (defn f [a]
       (let [b 1
             c 2]
-        (my-fn a b c)))
+        (+ 1 2 a b c d)))"
+    """
+    And I place the cursor before "(+ 1 2 a b c d)"
+    And I press "C-! ed"
+    And I type "my-fn"
+    Then I should see:
+    """
+    (def d 3)
+
+    (defn my-fn [a b c]
+      (+ 1 2 a b c d))
+
+    (defn f [a]
+      (let [b 1
+            c 2]
+        (my-fn a b c d)))
     """
