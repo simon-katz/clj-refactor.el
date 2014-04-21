@@ -103,6 +103,9 @@
 (require 'paredit)
 (require 'multiple-cursors)
 (require 'clojure-mode)
+;; uncomment this if you want to try clj-refactor with cider session
+;;  do not run the tests tho with this uncommented
+;;(require 'cider)
 
 (defcustom cljr-add-ns-to-blank-clj-files t
   "When true, automatically adds a ns form to new clj files."
@@ -470,9 +473,14 @@ errors."
   (replace-regexp-in-string "\\[?]?" "" sexp))
 
 (defun cljr--is-name-in-use-p (name)
-  (goto-char (point-min))
-  (let ((e (cljr--extract-sexp-content name)))
-    (when (re-search-forward (cljr--req-element-regexp e "[^[:word:]^-]") nil t) e)))
+  (cljr--goto-ns)
+  (paredit-forward)
+  (let ((body (replace-regexp-in-string "\".*\"" "" (buffer-substring-no-properties (point) (point-max))))
+        (e (cljr--extract-sexp-content name)))
+    (when (cider-eval-and-get-value (format "(find-referred \"%s\" \"%s\")"
+                                            body
+                                            e))
+        e)))
 
 (defun cljr--rectify-refer-type-require (sexp-as-list refer-index as-used as-index)
   (let* ((as-after-refer (and as-used (> as-index refer-index)))
@@ -1413,12 +1421,21 @@ front of function literals and sets."
           (when find-file-p
             (kill-buffer)))))))
 
-;; ------ minor mode -----------
+;;;###autoload
+(defun cljr-init-clj-refactor-cider-repl ()
+  (let* ((clj-refactor-full-path (locate-library "clj-refactor"))
+         (clj-refactor-dir (substring clj-refactor-full-path 0 (s-index-of "clj-refactor.el" clj-refactor-full-path))))
+    (when (and (fboundp 'cider-jack-in)
+               (not (cider-find-connection-buffer-for-project-directory clj-refactor-dir)))
+      (let ((proj-file-buff (find-file-noselect (concat clj-refactor-dir "project.clj"))))
+        (with-current-buffer proj-file-buff
+          (cider-jack-in))))))
 
+;; ------ minor mode -----------
 ;;;###autoload
 (define-minor-mode clj-refactor-mode
   "A mode to keep the clj-refactor keybindings."
-  nil " cljr" clj-refactor-map)
+  nil " cljr" clj-refactor-map :after-hook (cljr-init-clj-refactor-cider-repl))
 
 (provide 'clj-refactor)
 ;;; clj-refactor.el ends here
