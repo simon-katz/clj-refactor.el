@@ -1,3 +1,6 @@
 elpa
 tmp
 .ecukes-failing-scenarios
+target/
+.nrepl-port
+pom.xml
