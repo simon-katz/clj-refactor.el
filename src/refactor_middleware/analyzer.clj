@@ -1,4 +1,4 @@
-(ns refactor-middleware.ast
+(ns refactor-middleware.analyzer
   (:refer-clojure :exclude [macroexpand-1 read read-string])
   (:require [clojure.tools.analyzer :as ana]
             [clojure.tools.analyzer.ast :refer :all]
@@ -57,29 +57,28 @@
              ana/var?          ~var?]
      (ana/analyze (r/read-string ~string) e)))
 
-(defn find-referred [ns-body referred]
-  (some #(= (symbol referred) (:class %)) (nodes (string-ast ns-body))))
+(defn analyze [{:keys [transport ns-string] :as msg}]
+  (transport/send transport (response-for msg :ast (string-ast ns-string)))
+  (transport/send transport (response-for msg :status :done)))
 
-(defn find-referred-reply [{:keys [transport ns-body referred] :as msg}]
-  (let [result (find-referred ns-body referred)]
-    (transport/send transport (response-for msg :value (when result (str result))))
-    (transport/send transport (response-for msg :status :done))))
-
-(defn wrap-find-referred
-  ;; TODO a separate ast builder middleware which the action implementor middlewares depend on
-  "Middleware that builds AST for given ns and checks if given referred symbol is used or not."
+(defn wrap-analyze
+  "Middleware that builds AST for given ns string"
   [handler]
-  (fn [{:keys [op] :as msg}]
-    (if (= "refactor-find-referred" op)
-      (find-referred-reply msg)
-      (handler msg))))
+  (fn [{:keys [op orig-op ns-string] :as msg}]
+    (cond (and (= "analyze" op) (not orig-op))
+          (analyze msg)
+          (and (= "analyze" op) orig-op)
+          (handler (assoc msg
+                     :op orig-op
+                     :ast (string-ast ns-string)))
+          :else (handler msg))))
 
 (set-descriptor!
- #'wrap-find-referred
+ #'wrap-analyze
  {:handles
-  {"refactor-find-referred"
-   {:doc "Returns a boolean depending on if the referred found in the AST built with the body"
-    :requires {"ns-body" "the body of the namespace to build the AST with"
-               "referred" "The referred symbol to look for"}
+  {"analyze"
+   {:doc "Analyzes the ns-string using clojure.tools.analyzer"
+    :requires {"ns-string" "the body of the namespace to build the AST with"
+               "orig-op" "original operation delegating to analyzer"}
     :returns {"status" "done"
-              "value" "true if referred found false otherwise"}}}})
+              "ast" "the AST built for the ns-string"}}}})
