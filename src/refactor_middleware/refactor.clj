@@ -5,46 +5,48 @@
             [clojure.tools.nrepl.misc :refer [response-for]]
             [clojure.tools.nrepl.transport :as transport]))
 
-(defn find-referred [ast referred]
+(defn- find-referred [ast referred]
   (some #(= (symbol referred) (:class %)) (nodes ast)))
 
-(defn find-referred-reply [{:keys [transport ast referred] :as msg}]
+(defn- find-referred-reply [{:keys [transport ast referred] :as msg}]
   (let [result (find-referred ast referred)]
     (transport/send transport (response-for msg :value (when result (str result))))
     (transport/send transport (response-for msg :status :done))))
 
-(defn wrap-find-referred
-  "Checks if given referred symbol is used or not."
+(defn wrap-refactor
+  "Ensures that refactor only triggered with the right operation and forks to the appropriate refactor function"
   [handler]
-  (fn [{:keys [op ast referred] :as msg}]
-    (if (= "ast-refactor-find-referred" op)
-          (find-referred-reply msg)
-          (handler msg))))
+  (fn [{:keys [op ast refactor-fn] :as msg}]
+    (if (= "ast-refactor" op)
+      (cond (= "find-referred" refactor-fn) (find-referred-reply msg)
+            :else
+            (handler msg))
+      (handler msg))))
 
 (defn wrap-prepare-analyze
-  ""
+  "Reroutes the msg to the analyze middleware to have the AST created for the refactor function"
   [handler]
   (fn [{:keys [op ns-string] :as msg}]
-    (if (= "refactor-find-referred" op)
+    (if (= "refactor" op)
       (handler (assoc msg
                  :op "analyze"
-                 :orig-op "ast-refactor-find-referred"))
+                 :orig-op "ast-refactor"))
       (handler msg))))
 
 (set-descriptor!
- #'wrap-find-referred
+ #'wrap-refactor
  {:requires #{"analyze" "refactor-find-referred"}
   :handles
-  {"ast-refactor-find-referred"
+  {"ast-refactor"
    {:doc "Returns a boolean depending on if the referred found in the AST"
     :requires {"ast" "AST representing clojure code to search the referred in"
-               "referred" "The referred symbol to look for"}
+               "refactor-fn" "The refactor function to invoke"}
     :returns {"status" "done"
-              "value" "true if referred found nil otherwise"}}}})
+              "value" "result of the refactor"}}}})
 
 (set-descriptor!
  #'wrap-prepare-analyze
  {:expects #{"analyze"}
   :handles
-  {"refactor-find-referred"
+  {"refactor"
    {:returns {"status" "done"}}}})

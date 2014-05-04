@@ -476,8 +476,9 @@ errors."
   (let* ((body (format "(%s)" (replace-regexp-in-string "\"" "\"" (buffer-substring-no-properties (point) (point-max)))))
          (e (cljr--extract-sexp-content name))
          (result (plist-get (nrepl-send-request-sync
-                             (list "op" "refactor-find-referred"
-                                   "ns-body" body
+                             (list "op" "refactor"
+                                   "ns-string" body
+                                   "refactor-fn" "find-referred"
                                    "referred" e))
                             :value)))
     (when result e)))
@@ -488,7 +489,7 @@ errors."
     (when (re-search-forward (cljr--req-element-regexp e "[^[:word:]^-]") nil t) e)))
 
 (defun cljr--is-name-in-use-p (name)
-  (if (and (cider-connected-p) (nrepl-op-supported-p "refactor-find-referred"))
+  (if (and (cider-connected-p) (nrepl-op-supported-p "refactor"))
       (cljr--is-name-in-use-ast-p name)
     (progn
       (message "clj-refactor middleware is not found. Failing back to vanilla elisp impl")
