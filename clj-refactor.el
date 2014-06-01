@@ -204,7 +204,8 @@
   (define-key clj-refactor-map (funcall key-fn "ci") 'cljr-cycle-if)
   (define-key clj-refactor-map (funcall key-fn "ad") 'cljr-add-declaration)
   (define-key clj-refactor-map (funcall key-fn "dk") 'cljr-destructure-keys)
-  (define-key clj-refactor-map (funcall key-fn "pc") 'cljr-project-clean))
+  (define-key clj-refactor-map (funcall key-fn "pc") 'cljr-project-clean)
+  (define-key clj-refactor-map (funcall key-fn "rd") 'cljr-remove-debug-fns))
 
 ;;;###autoload
 (defun cljr-add-keybindings-with-prefix (prefix)
@@ -494,6 +495,35 @@ errors."
     (progn
       (message "clj-refactor middleware is not found. Failing back to vanilla elisp impl")
       (cljr--is-name-in-use-vanilla-p name))))
+
+(defun cljr-remove-debug-fns ()
+  (interactive)
+  (if (and (cider-connected-p) (nrepl-op-supported-p "refactor"))
+      (let* ((body (format "(%s)" (replace-regexp-in-string "\"" "\"" (buffer-substring-no-properties (point-min) (point-max)))))
+             (result (plist-get (nrepl-send-request-sync
+                                 (list "op" "refactor"
+                                       "ns-string" body
+                                       "refactor-fn" "find-debug-fns"
+                                       "debug-fns" "#'clojure.core/println,#'clojure.core/pr,#'clojure.core/prn"))
+                                :value))
+             (debug-fn-tuples (pop result))
+             (removed-lines 0))
+        (while debug-fn-tuples
+          (let ((line (- (1- (car debug-fn-tuples)) removed-lines))
+                (end-line (nth 1 debug-fn-tuples))
+                (column (nth 2 debug-fn-tuples)))
+            (message "removing %s at line %s [%s] column %s (end-line %s end-column %s)" (-last-item debug-fn-tuples) line (car debug-fn-tuples) column end-line (nth 3 debug-fn-tuples))
+            (save-excursion
+              (goto-char (point-min))
+              (forward-line line)
+              (move-to-column column)
+              (paredit-backward)
+              (cljr--delete-and-extract-sexp)
+              (join-line))
+            (setq removed-lines (+ removed-lines (1+ (- end-line (car debug-fn-tuples))))))
+          (setq debug-fn-tuples (pop result))))
+    (message "Remove debug functions is only supported with clj-refactor middleware. Please add the middleware to your nREPL.")))
+
 
 (defun cljr--rectify-refer-type-require (sexp-as-list refer-index as-used as-index)
   (let* ((as-after-refer (and as-used (> as-index refer-index)))
