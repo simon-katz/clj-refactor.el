@@ -474,7 +474,7 @@ errors."
 (defun cljr--is-name-in-use-ast-p (name)
   (cljr--goto-ns)
   (paredit-forward)
-  (let* ((body (format "(%s)" (replace-regexp-in-string "\"" "\"" (buffer-substring-no-properties (point) (point-max)))))
+  (let* ((body (replace-regexp-in-string "\"" "\"" (buffer-substring-no-properties (point-min) (point-max))))
          (e (cljr--extract-sexp-content name))
          (result (plist-get (nrepl-send-request-sync
                              (list "op" "refactor"
@@ -499,12 +499,12 @@ errors."
 (defun cljr-remove-debug-fns ()
   (interactive)
   (if (and (cider-connected-p) (nrepl-op-supported-p "refactor"))
-      (let* ((body (format "(%s)" (replace-regexp-in-string "\"" "\"" (buffer-substring-no-properties (point-min) (point-max)))))
+      (let* ((body (replace-regexp-in-string "\"" "\"" (buffer-substring-no-properties (point-min) (point-max))))
              (result (plist-get (nrepl-send-request-sync
                                  (list "op" "refactor"
                                        "ns-string" body
                                        "refactor-fn" "find-debug-fns"
-                                       "debug-fns" "#'clojure.core/println,#'clojure.core/pr,#'clojure.core/prn"))
+                                       "debug-fns" "println,pr,prn,print-let"))
                                 :value))
              (debug-fn-tuples (pop result))
              (removed-lines 0))
