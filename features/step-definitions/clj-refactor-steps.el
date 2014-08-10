@@ -15,9 +15,21 @@
     (mkdir (expand-file-name project-name (expand-file-name "src" dir-name)) t)
     (mkdir (expand-file-name project-name (expand-file-name "test" dir-name)) t)
 
-    ;; add project.clj
+     ;; add project.clj
     (with-temp-file (expand-file-name "project.clj" dir-name)
       (insert "(defproject " project-name " \"0.1.0-SNAPSHOT\")"))))
+
+(Given "^I use refactor-nrepl$"
+  (lambda ()
+    (with-temp-file (expand-file-name "profiles.clj" "~/.lein")
+      (insert "{:user {:plugins [[refactor-nrepl \"0.1.0-SNAPSHOT\"]]}}"))))
+
+(Given "^I run \\(cider-jack-in\\)$"
+  (lambda (_ callback)
+    (cider-jack-in)
+    (while (not (cider-connected-p))
+      (sleep-for 1))
+    (funcall callback)))
 
 (Given "^I have a clojure-file \"\\([^\"]+\\)\"$"
   (lambda (file-name)

@@ -12,11 +12,18 @@
 
 (add-to-list 'load-path clj-refactor-root-path)
 
+(setq lein-profiles-file
+  (expand-file-name "profiles.clj" "~/.lein"))
+
+(setq lein-profiles-exists-p
+  (file-exists-p lein-profiles-file))
+
 (require 'clojure-mode)
 (require 'clj-refactor)
 (require 'espuds)
 (require 'ert)
 (require 's)
+(require 'cider)
 
 (defun clojure-expected-ns ()
   "Returns the namespace name that the file should have."
@@ -28,6 +35,10 @@
      "_" "-" (mapconcat 'identity (cdr (split-string relative "/")) "."))))
 
 (Setup
+ ;; hacking lein profiles
+ (when lein-profiles-exists-p
+   (copy-file "~/.lein/profiles.clj" "~/.lein/profiles.clj_ecukessave" "ok"))
+
  (cljr-add-keybindings-with-prefix "C-!")
  (add-hook 'clojure-mode-hook (lambda () (clj-refactor-mode))))
 
@@ -52,6 +63,14 @@
                  (string-match regexp name))
         (kill-buffer buffer)))))
 
+(defun revert-lein-profiles ()
+  (if lein-profiles-exists-p
+   (progn
+     (copy-file "~/.lein/profiles.clj_ecukessave" "~/.lein/profiles.clj" "ok")
+     (delete-file "~/.lein/profiles.clj_ecukessave"))
+   (when (file-exists-p (expand-file-name "profiles.clj" "~/.lein"))
+     (delete-file "~/.lein/profiles.clj"))))
+
 (After
  (save-all-buffers-dont-ask)
  (kill-matching-buffers-dont-ask "clj")
@@ -59,4 +78,5 @@
 
 (Teardown
  ;; After when everything has been run
- )
+ ;; hacking lein profiles
+ (revert-lein-profiles))
