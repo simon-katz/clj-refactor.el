@@ -8,7 +8,8 @@ before_install:
   - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
   - mkdir leinbin
   - mv lein leinbin/
-  - chmod a+x leinbin/lein
+  - ls -la /home/travis/leinbin/
+  - chmod a+x /home/travis/leinbin/lein
   - export PATH="/home/travis/leinbin:$PATH"
   - lein
 env:
