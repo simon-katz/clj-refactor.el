@@ -11,6 +11,7 @@ Feature: remove unused require using cider and nrepl middleware
     And I switch auto-sort off
 
   Scenario: cider keeps it if referenced
+    Then I should have a cider session with refactor-nrepl
     When I insert:
     """
     (ns cljr.core
@@ -25,6 +26,7 @@ Feature: remove unused require using cider and nrepl middleware
     """
     And I place the cursor before "now"
     And I press "C-! rr"
+    Then I should see message "refactor-nrepl is used"
     Then I should see:
     """
     (ns cljr.core

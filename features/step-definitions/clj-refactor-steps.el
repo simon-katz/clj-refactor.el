@@ -66,6 +66,10 @@
   (lambda ()
     (multiple-cursors-mode 0)))
 
+(Then "^I should have a cider session with refactor-nrepl$"
+   (lambda ()
+     (assert (and (cider-connected-p) (nrepl-op-supported-p "refactor")))))
+
 (Then "^the file should be named \"\\([^\"]+\\)\"$"
   (lambda (file-name-postfix)
     (assert (s-ends-with? file-name-postfix (buffer-file-name)) nil "Expected %S to end with %S" (buffer-file-name) file-name-postfix)))

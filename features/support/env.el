@@ -71,10 +71,16 @@
    (when (file-exists-p (expand-file-name "profiles.clj" "~/.lein"))
      (delete-file "~/.lein/profiles.clj"))))
 
+(defun quit-test-cider ()
+  (dolist (connection nrepl-connection-list)
+    (when connection
+      (nrepl-close connection))))
+
 (After
  (save-all-buffers-dont-ask)
  (kill-matching-buffers-dont-ask "clj")
- (delete-directory (expand-file-name "tmp" clj-refactor-root-path) t))
+ (delete-directory (expand-file-name "tmp" clj-refactor-root-path) t)
+ (when (cider-connected-p) (quit-test-cider)))
 
 (Teardown
  ;; After when everything has been run

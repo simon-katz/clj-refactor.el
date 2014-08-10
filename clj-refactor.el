@@ -491,7 +491,9 @@ errors."
 
 (defun cljr--is-name-in-use-p (name)
   (if (and (cider-connected-p) (nrepl-op-supported-p "refactor"))
-      (cljr--is-name-in-use-ast-p name)
+      (progn
+        (message "refactor-nrepl is used")
+        (cljr--is-name-in-use-ast-p name))
     (progn
       (message "clj-refactor middleware is not found. Failing back to vanilla elisp impl")
       (cljr--is-name-in-use-vanilla-p name))))
