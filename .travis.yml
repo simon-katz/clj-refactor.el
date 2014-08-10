@@ -5,7 +5,7 @@ before_install:
   - export PATH="/home/travis/.evm/bin:$PATH"
   - evm install $EVM_EMACS --use
   - cask
-  - curl -fsSkL https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
+  - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
   - mkdir leinbin
   - mv lein leinbin/
   - chmod a+x leinbin/lein
