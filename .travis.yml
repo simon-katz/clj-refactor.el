@@ -6,8 +6,8 @@ before_install:
   - evm install $EVM_EMACS --use
   - cask
   - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
-  - mkdir leinbin
-  - mv lein leinbin/
+  - mkdir /home/travis/leinbin
+  - mv lein /home/travis/leinbin/
   - ls -la /home/travis/leinbin/
   - chmod a+x /home/travis/leinbin/lein
   - export PATH="/home/travis/leinbin:$PATH"
