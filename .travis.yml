@@ -5,13 +5,6 @@ before_install:
   - export PATH="/home/travis/.evm/bin:$PATH"
   - evm install $EVM_EMACS --use
   - cask
-  - wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
-  - mkdir /home/travis/leinbin
-  - mv lein /home/travis/leinbin/
-  - ls -la /home/travis/leinbin/
-  - chmod a+x /home/travis/leinbin/lein
-  - export PATH="/home/travis/leinbin:$PATH"
-  - lein
 env:
   - EVM_EMACS=emacs-24.1-bin
   - EVM_EMACS=emacs-24.2-bin
